@@ -675,6 +675,7 @@ export abstract class BaseLLM implements ILLM {
     if (!raw) {
       prompt = this._templatePromptLikeMessages(prompt);
     }
+    console.log(prompt)
 
     if (logEnabled) {
       interaction?.logItem({
@@ -697,6 +698,7 @@ export abstract class BaseLLM implements ILLM {
             signal,
           );
           completion = response.choices[0]?.text ?? "";
+          console.log("completion from baseLLM is", completion);
           yield completion;
         } else {
           // Stream true
@@ -727,7 +729,14 @@ export abstract class BaseLLM implements ILLM {
             kind: "chunk",
             chunk,
           });
-          yield chunk;
+          // hack to make json mode work for groq
+          try{
+            let jsonChunk = JSON.parse(chunk);
+            let newChunk = JSON.stringify(jsonChunk)
+            yield newChunk;
+          }catch(e){
+            yield chunk;
+          }
         }
       }
       status = this._logEnd(

@@ -1067,7 +1067,7 @@ export interface ConfigDependentToolParams {
 }
 
 export type GetTool = (params: ConfigDependentToolParams) => Tool;
-
+// put json mode here maybe
 export interface BaseCompletionOptions {
   temperature?: number;
   topP?: number;

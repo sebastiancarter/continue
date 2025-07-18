@@ -275,24 +275,31 @@ export class ContinueCompletionProvider
         signal,
         outcome,
       );
+      // only displays autocomplete info if the autocomplete matches the potential options vscode suggests
+      // e.g. if you have console.log and it suggests something that starts with some thing other than ()
+      // commenting this out does nothing???? maybe is here for redundancy, it seems quite difficult to remove this
+      // with typescript
       if (!willDisplay) {
         return null;
       }
+
 
       // Marking the outcome as displayed saves
       // the current outcome as a value of the key completionId.
       if (this.isNextEditActive) {
         this.nextEditProvider.markDisplayed(
-          input.completionId,
+          input.completionId, 
           outcome as NextEditOutcome,
         );
       } else {
+        console.log("Logging autocomplete SEB!!!!");
         this.completionProvider.markDisplayed(
           input.completionId,
           outcome as AutocompleteOutcome,
         );
       }
       this._lastShownCompletion = outcome;
+      console.log("the json is", outcome.completion)
 
       // Construct the range/text to show
       const startPos = selectedCompletionInfo?.range.start ?? position;
@@ -301,6 +308,29 @@ export class ContinueCompletionProvider
       let range = new vscode.Range(startPos, startPos);
       // let range = new vscode.Range(startPos, endPos);
       let completionText = outcome.completion;
+
+      // making extra specially sure we only have single line autocompletion
+
+      // getting the completion and confidence from the llm
+      let confidence: number | undefined = -1;
+      try{
+        let completionTextJson = JSON.parse(completionText);
+        console.log(completionTextJson.code);
+        console.log(completionTextJson.confidence);
+        completionText = completionTextJson.code;
+        confidence = parseFloat(completionTextJson.confidence);
+      }catch (e){
+        console.warn(e)
+      }
+
+      // TODO: get confidence from personalized time learner
+      let persThresh: number = 0;
+      if(confidence < persThresh){
+        console.log("not good enough threshold", confidence)
+        return null;
+      }
+      
+      console.log('completionText is:', completionText);
 
       // NOTE: This seems like an autocomplete logic.
       const isSingleLineCompletion = outcome.completion.split("\n").length <= 1;

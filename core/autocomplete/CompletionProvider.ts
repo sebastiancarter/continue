@@ -29,6 +29,7 @@ const ERRORS_TO_IGNORE = [
   "operation was aborted",
 ];
 
+//Custom class that handles Continue (TM) autocompletions
 export class CompletionProvider {
   private autocompleteCache = AutocompleteLruCache.get();
   public errorsShown: Set<string> = new Set();

@@ -227,10 +227,10 @@ class OpenAI extends BaseLLM {
     prompt: string,
     signal: AbortSignal,
     options: CompletionOptions,
-  ): AsyncGenerator<string> {
+  ): AsyncGenerator<string> { 
     for await (const chunk of this._streamChat(
-      [{ role: "system", 
-        content: "from now on you will reply with a json containing a dict with two keys: 'code' and 'confidence'.  The user will provide you with a incomplete snippet of Python code. The specific line that is incomplete will be marked by <fim_suffix>. You will fill in the 'code' key with the best continuation (aka auto-completion) of the code the user provided.  'confidence' should be a value from 0.0 to 1.0 representing how certain you are that this is the way the user intends to complete their code. You should always give an auto-completion even if you are not very certain about what the user intends to do next."}, 
+      [{ role: "system", // THIS IS WHERE WE DO THE SYSTEM PROMPT
+        content: "from now on you will reply with a json containing a dict with two keys: 'code' and 'confidence'.  The user will provide you with a incomplete snippet of code. The specific line that is incomplete will be marked by <fim_suffix>. You will fill in the 'code' key with the best continuation (aka auto-completion) of the code the user provided.  'confidence' should be a value from 0.0 to 1.0 representing how certain you are that this is the way the user intends to complete their code. You should always give an auto-completion even if you are not very certain about what the user intends to do next."}, 
         { role: "user", content: prompt }],
       signal,
       options,
@@ -322,7 +322,6 @@ class OpenAI extends BaseLLM {
     signal: AbortSignal,
     options: CompletionOptions,
   ): AsyncGenerator<ChatMessage> {
-    console.log("options", options)
     if (
       !isChatOnlyModel(options.model) &&
       this.supportsCompletions() &&
@@ -344,7 +343,6 @@ class OpenAI extends BaseLLM {
     }
 
     const body = this._convertArgs(options, messages);
-    console.log(body)
     body.response_format = { "type": "json_object"};
 
     const response = await this.fetch(this._getEndpoint("chat/completions"), {
@@ -363,7 +361,6 @@ class OpenAI extends BaseLLM {
         return; // Aborted by user
       }
       const data = await response.json();
-      console.log("message", data.choices[0].message)
       yield data.choices[0].message;
       return;
     }
@@ -371,7 +368,6 @@ class OpenAI extends BaseLLM {
     for await (const value of streamSse(response)) {
       const chunk = fromChatCompletionChunk(value);
       if (chunk) {
-        console.log("chunk is", chunk.content)
         yield chunk;
       }
     }

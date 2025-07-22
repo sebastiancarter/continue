@@ -7,7 +7,11 @@ import { getContinueGlobalPath, isFileWithinFolder } from "core/util/paths";
 import fs from "fs";
 import { resolve } from "path";
 import * as vscode from "vscode";
+import { superActionLogger } from "../../../../personalized";
 import { ContinueCompletionProvider } from "../autocomplete/completionProvider";
+
+var actionLogger = new superActionLogger;
+var startTime = Date.now(); // might not need start time?
 
 export const getBeforeCursorPos = (range: Range, activePos: Position) => {
   // whichever side of the range isn't active is the before position
@@ -60,6 +64,12 @@ export const handleTextDocumentChange = async (
   const changes = event.contentChanges;
   const editor = vscode.window.activeTextEditor;
   const { config } = await configHandler.loadConfig();
+  actionLogger.addText(changes[0].text, Date.now(), changes[0].range);
+
+  // logging a sentence every time enter is pressed, maybe shouldn't do this?
+  if (changes[0].text == '\r\n') {
+    actionLogger.sendAllToServer();
+  }
 
   if (!config?.experimental?.logEditingData) return;
   if (!editor) return;

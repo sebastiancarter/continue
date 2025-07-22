@@ -16,3 +16,6 @@ class Calculator:
 
     def get_result(self):
         return self.result
+
+if __name__ == "__main__":
+    print("hello")

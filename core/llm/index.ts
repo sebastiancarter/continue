@@ -371,7 +371,6 @@ export abstract class BaseLLM implements ILLM {
         });
         return "cancelled";
       } else {
-        console.log(error);
         interaction?.logItem({
           kind: "error",
           name: error.name,
@@ -675,7 +674,7 @@ export abstract class BaseLLM implements ILLM {
     if (!raw) {
       prompt = this._templatePromptLikeMessages(prompt);
     }
-    console.log(prompt)
+    console.log("prompt is", prompt)
 
     if (logEnabled) {
       interaction?.logItem({

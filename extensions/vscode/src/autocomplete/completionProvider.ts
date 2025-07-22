@@ -24,6 +24,7 @@ import { checkFim } from "core/nextEdit/diff/diff";
 import { NextEditLoggingService } from "core/nextEdit/NextEditLoggingService";
 import { NextEditProvider } from "core/nextEdit/NextEditProvider";
 import { NextEditOutcome } from "core/nextEdit/types";
+import { personalizedCaller, superActionLogger } from "../../../../personalized";
 import { NextEditWindowManager } from "../activation/NextEditWindowManager";
 import { getDefinitionsFromLsp } from "./lsp";
 import { RecentlyEditedTracker } from "./recentlyEdited";
@@ -34,6 +35,9 @@ import {
   setupStatusBar,
   stopStatusBarLoading,
 } from "./statusBar";
+
+var req = new personalizedCaller;
+var logger = new superActionLogger;
 
 interface VsCodeCompletionInput {
   document: vscode.TextDocument;
@@ -129,6 +133,8 @@ export class ContinueCompletionProvider
     if (token.isCancellationRequested || !enableTabAutocomplete) {
       return null;
     }
+
+    //vscode.workspace.onDidChangeTextDocument()
 
     if (document.uri.scheme === "vscode-scm") {
       return null;
@@ -317,16 +323,21 @@ export class ContinueCompletionProvider
         let completionTextJson = JSON.parse(completionText);
         console.log(completionTextJson.code);
         console.log(completionTextJson.confidence);
-        completionText = completionTextJson.code;
+        completionText = completionTextJson.code.split("\n")[0];
         confidence = parseFloat(completionTextJson.confidence);
       }catch (e){
         console.warn(e)
       }
 
-      // TODO: get confidence from personalized time learner
-      let persThresh: number = 0;
+      logger.addGeneratedText(completionText, Date.now(), range, confidence); // logging the generated text
+      logger.sendPredsToServer(); // we send every pred to the server
+
+      let persThresh = await req.getThreshold().then(threshold => {return threshold}).catch(error => {console.error(error)});
+      if(persThresh === undefined) {
+        persThresh = 0;
+      }
       if(confidence < persThresh){
-        console.log("not good enough threshold", confidence)
+        console.log("not good enough threshold", confidence);
         return null;
       }
       
@@ -354,7 +365,7 @@ export class ContinueCompletionProvider
         completionText = result.completionText;
         if (result.range) {
           range = new vscode.Range(
-            new vscode.Position(startPos.line, result.range.start),
+            new vscode.Position(startPos.line, result.range.start), // use this for positional info
             new vscode.Position(startPos.line, result.range.end),
           );
         }
@@ -478,7 +489,7 @@ export class ContinueCompletionProvider
           `Won't display completion because text doesn't match: ${text}, ${outcome.completion}`,
           range,
         );
-        return false;
+        return true;
       }
     }
 
